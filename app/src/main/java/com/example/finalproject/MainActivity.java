@@ -11,6 +11,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Stack;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,11 +34,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button btnMul;
     private Button btnDiv;
     private Button btnPoint;
+    private Button btnSin;
+    private Button btnCos;
+    private Button btnTan;
+    private Button btnCot;
+    private Button btnLog;
 
     private Button btnResult;
     private Button btnClear;
     private Button btnClearALL;
 
+    ArrayList<String> postFix;
+    Stack stack;
+    Stack stackResult;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +54,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         initWidget();
         setEventClickViews();
+        postFix = new ArrayList<String>();
+        stack = new Stack();
+        stackResult = new Stack();
     }
 
     public void initWidget() {
@@ -65,6 +77,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnSub = findViewById(R.id.btnSub);
         btnMul = findViewById(R.id.btnMul);
         btnDiv = findViewById(R.id.btnDiv);
+        btnSin = findViewById(R.id.btnSin);
+        btnTan = findViewById(R.id.btnTan);
+        btnCos = findViewById(R.id.btnCos);
+        btnCot = findViewById(R.id.btnCot);
+        btnLog = findViewById(R.id.btnLog);
 
         btnPoint = findViewById(R.id.btnPoint);
         btnClear = findViewById(R.id.btnClear);
@@ -88,6 +105,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnSub.setOnClickListener(this);
         btnMul.setOnClickListener(this);
         btnDiv.setOnClickListener(this);
+        btnSin.setOnClickListener(this);
+        btnCos.setOnClickListener(this);
+        btnTan.setOnClickListener(this);
+        btnCot.setOnClickListener(this);
+        btnLog.setOnClickListener(this);
 
         btnPoint.setOnClickListener(this);
         btnClear.setOnClickListener(this);
@@ -100,7 +122,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (view.getId()) {
             case R.id.btnNumber1:
                 edtNumber.append("1");
-
                 break;
             case R.id.btnNumber2:
                 edtNumber.append("2");
@@ -144,6 +165,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btnPoint:
                 edtNumber.append(".");
                 break;
+            case R.id.btnSin:
+                edtNumber.append("sin(");
+                break;
+            case R.id.btnCos:
+                edtNumber.append("cos(");
+                break;
+            case R.id.btnTan:
+                edtNumber.append("tan(");
+                break;
+            case R.id.btnCot:
+                edtNumber.append("cot(");
+                break;
+            case R.id.btnLog:
+                edtNumber.append("log(");
+                break;
             case R.id.btnClear:
                 BaseInputConnection textFieldInputConnection = new BaseInputConnection(edtNumber, true);
                 textFieldInputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
@@ -151,90 +187,166 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btnClearAll:
                 edtNumber.setText("");
                 tvResult.setText("");
+                stack.clear();
+                stackResult.clear();
+                postFix.clear();
                 break;
             case R.id.btnResult:
-                double Result = 0;
-                addOperation(edtNumber.getText().toString());
-                addNumber(edtNumber.getText().toString());
-                if (arrOperation.size() > arrNumber.size()) {
-                    tvResult.setText("lỗi định dạng ");
-                } else {
-                    for (int i = 0; i < (arrNumber.size() - 1); i++) {
-                        switch (arrOperation.get(i)) {
-                            case "+":
-                                if (i == 0) {
-                                    Result = arrNumber.get(i) + arrNumber.get(i + 1);
-                                } else {
-                                    Result = Result + arrNumber.get(i + 1);
-                                }
-                                break;
-                            case "-":
-                                if (i == 0) {
-                                    Result = arrNumber.get(i) - arrNumber.get(i + 1);
-                                } else {
-                                    Result = Result - arrNumber.get(i + 1);
-                                }
-                                break;
-                            case "*":
-                                if (i == 0) {
-                                    Result = arrNumber.get(i) * arrNumber.get(i + 1);
-                                } else {
-                                    Result = Result * arrNumber.get(i + 1);
-                                }
-                                break;
-                            case "/":
-                                if (i == 0) {
-                                    Result = arrNumber.get(i) / arrNumber.get(i + 1);
-                                } else {
-                                    Result = Result / arrNumber.get(i + 1);
-                                }
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                    tvResult.setText(Result + "");
-                }
+                goThrough(edtNumber.getText().toString());
+                tvResult.setText(result(postFix) + "");
                 break;
         }
 
     }
 
-    public ArrayList<String> arrOperation;
+    // function
+    public boolean isNumeric(String strNum) {
+        if (strNum == null) {
+            return false;
+        }
+        try {
+            double d = Double.parseDouble(strNum);
+        } catch (NumberFormatException nfe) {
+            return false;
+        }
+        return true;
+    }
 
-    public ArrayList<Double> arrNumber;
+    public boolean hasPrecedence(String op1, String op2) {
+        if (op2.equals("(") || op2.equals(")"))
+            return false;
+        if ((op1.equals("*") || op1.equals("/")) && (op2.equals("+") || op2.equals("-"))) {
+            return false;
+        }
+        if (op1.equals("^") && (op2.equals("+") || op2.equals("-") || op2.equals("*") || op2.equals("/")))
+            return false;
+        else
+            return true;
+    }
 
-    public int addOperation(String input) {
-        arrOperation = new ArrayList<>();
-        char[] cArray = input.toCharArray();
-        for (int i = 0; i < cArray.length; i++) {
-            switch (cArray[i]) {
-                case '*':
-                    arrOperation.add(cArray[i] + "");
-                    break;
-                case '/':
-                    arrOperation.add(cArray[i] + "");
-                    break;
-                case '+':
-                    arrOperation.add(cArray[i] + "");
-                    break;
-                case '-':
-                    arrOperation.add(cArray[i] + "");
-                    break;
-                default:
-                    break;
+    public boolean isTrigonometric(String s) {
+        if (s.equals("sin") || s.equals("cos") || s.equals("tan") || s.equals("cot") || s.equals("log")) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isAlphabetic(char c) {
+        if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))
+            return true;
+        else
+            return false;
+    }
+
+    public void goThrough(String s) {
+        String temp = "";
+        String trigonometric = "";
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (isNumeric(String.valueOf(c)) == true) {
+                temp += c;
+            } else if (isAlphabetic(c) == true) {
+                trigonometric += c;
+            } else if (c == ')') {
+                if (temp != "") {
+                    postFix.add(temp);
+                    temp = "";
+                }
+                String t = String.valueOf(stack.pop());
+                while (t != "(") {
+                    postFix.add(t);
+                    t = String.valueOf(stack.pop());
+                }
+            } else {
+                if (temp != "") {
+                    postFix.add(temp);
+                    temp = "";
+                }
+                if (c == '+' || c == '-' || c == '/' || c == '*' || c == '^') {
+                    String a = "";
+                    String b = "";
+                    while (!stack.empty() && hasPrecedence(b = Character.toString(c), a = (String) stack.peek()) == true) {
+                        postFix.add(String.valueOf(stack.pop()));
+                        System.out.println(c + " - " + a);
+                    }
+                    stack.push(String.valueOf(c));
+                } else {
+                    if (isTrigonometric(trigonometric)) {
+                        stack.push(trigonometric);
+                        trigonometric = "";
+                    }
+                    stack.push("(");
+                }
             }
+
+            if (i == s.length() - 1) {
+                if (temp != "") {
+                    postFix.add(temp);
+                }
+                while (!stack.empty()) {
+                    postFix.add(String.valueOf(stack.pop()));
+                }
+            }
+        }
+    }
+
+    public double applyOp(String op, double a, double b) {
+        switch (op) {
+            case "+":
+                return b + a;
+            case "-":
+                return b - a;
+            case "*":
+                return b * a;
+            case "/":
+                if (a == 0)
+                    throw new
+                            UnsupportedOperationException("Cannot divide by zero");
+                return b / a;
+            case "^":
+                return Math.pow(b, a);
         }
         return 0;
     }
 
-    public void addNumber(String stringInput) {
-        arrNumber = new ArrayList<>();
-        Pattern regex = Pattern.compile("(\\d+(?:\\.\\d+)?)");
-        Matcher matcher = regex.matcher(stringInput);
-        while (matcher.find()) {
-            arrNumber.add(Double.valueOf(matcher.group(1)));
+    public double result(ArrayList<String> p) {
+        for (String s : p) {
+            if (isNumeric(s)) {
+                stackResult.push(s);
+            } else {
+                if (isTrigonometric(s)) {
+                    double a = Double.parseDouble(stackResult.pop().toString());
+                    switch (s) {
+                        case "sin":
+                            a = Math.PI / 180 * a;
+                            stackResult.push(Math.sin(a));
+                            break;
+                        case "cos":
+                            a = Math.PI / 180 * a;
+                            stackResult.push(Math.cos(a));
+                            break;
+                        case "tan":
+                            a = Math.PI / 180 * a;
+                            stackResult.push(Math.tan(a));
+                            break;
+                        case "cot":
+                            a = Math.PI / 180 * a;
+                            stackResult.push(1 / (Math.tan(a)));
+                            break;
+                        case "log":
+                            stackResult.push(Math.log(a));
+                            break;
+                    }
+
+                } else {
+                    double a = Double.parseDouble(stackResult.pop().toString());
+                    double b = Double.parseDouble(stackResult.pop().toString());
+                    double result = applyOp(s, a, b);
+                    stackResult.push(String.valueOf(result));
+                }
+            }
         }
+        return Double.parseDouble(stackResult.pop().toString());
     }
 }
 
