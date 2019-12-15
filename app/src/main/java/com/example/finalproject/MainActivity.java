@@ -12,8 +12,6 @@ import android.widget.TextView;
 
 import java.util.ArrayList;
 import java.util.Stack;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
     private EditText edtNumber;
@@ -39,6 +37,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private Button btnTan;
     private Button btnCot;
     private Button btnLog;
+    private Button btnPow;
+    private Button btnExp;
+    private Button btnSqrt;
+    private Button btnGiaiThua;
+    private Button btnPi;
 
     private Button btnResult;
     private Button btnClear;
@@ -82,6 +85,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnCos = findViewById(R.id.btnCos);
         btnCot = findViewById(R.id.btnCot);
         btnLog = findViewById(R.id.btnLog);
+        btnPow = findViewById(R.id.btnPow);
+        btnExp = findViewById(R.id.btnExp);
+        btnSqrt = findViewById(R.id.btnSqrt);
+        btnGiaiThua = findViewById(R.id.btnGt);
+        btnPi = findViewById(R.id.btnPi);
 
         btnPoint = findViewById(R.id.btnPoint);
         btnClear = findViewById(R.id.btnClear);
@@ -110,6 +118,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnTan.setOnClickListener(this);
         btnCot.setOnClickListener(this);
         btnLog.setOnClickListener(this);
+        btnPow.setOnClickListener(this);
+        btnExp.setOnClickListener(this);
+        btnSqrt.setOnClickListener(this);
+        btnGiaiThua.setOnClickListener(this);
+        btnPi.setOnClickListener(this);
 
         btnPoint.setOnClickListener(this);
         btnClear.setOnClickListener(this);
@@ -180,6 +193,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btnLog:
                 edtNumber.append("log(");
                 break;
+            case R.id.btnPow:
+                edtNumber.append("^");
+                break;
+            case R.id.btnExp:
+                edtNumber.append("exp(");
+                break;
+            case R.id.btnSqrt:
+                edtNumber.append("sqrt(");
+                break;
+            case R.id.btnGt:
+                edtNumber.append("!");
+                break;
+            case R.id.btnPi:
+                edtNumber.append("PI");
+                break;
             case R.id.btnClear:
                 BaseInputConnection textFieldInputConnection = new BaseInputConnection(edtNumber, true);
                 textFieldInputConnection.sendKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
@@ -225,7 +253,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public boolean isTrigonometric(String s) {
-        if (s.equals("sin") || s.equals("cos") || s.equals("tan") || s.equals("cot") || s.equals("log")) {
+        if (s.equals("sin") || s.equals("cos") || s.equals("tan") || s.equals("cot") || s.equals("log")
+        || s.equals("exp") || s.equals("sqrt") || s.equals("PI")) {
             return true;
         }
         return false;
@@ -309,12 +338,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         return 0;
     }
 
+
+    public static double giaiThua(double a){
+        double S=1;
+        if(a==0 || a==1) return 1;
+        for (int i=2;i<=a;i++){
+            S=S*i;
+        }
+        return S;
+    }
+
     public double result(ArrayList<String> p) {
         for (String s : p) {
             if (isNumeric(s)) {
                 stackResult.push(s);
             } else {
                 if (isTrigonometric(s)) {
+
                     double a = Double.parseDouble(stackResult.pop().toString());
                     switch (s) {
                         case "sin":
@@ -335,6 +375,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             break;
                         case "log":
                             stackResult.push(Math.log(a));
+                            break;
+                        case "exp":
+                            stackResult.push(Math.exp(a));
+                            break;
+                        case "sqrt":
+                            stackResult.push(Math.sqrt(a));
                             break;
                     }
 
